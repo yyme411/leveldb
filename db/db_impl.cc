@@ -70,6 +70,7 @@ struct DBImpl::CompactionState {
 
   Compaction* const compaction;
 
+  // 小于smallest_snapshot的记录可以删除。
   // Sequence numbers < smallest_snapshot are not significant since we
   // will never have to service a snapshot below smallest_snapshot.
   // Therefore if we have seen a sequence number S <= smallest_snapshot,
@@ -185,8 +186,11 @@ Status DBImpl::NewDB() {
   new_db.SetNextFile(2);
   new_db.SetLastSequence(0);
 
+  // mainfest 文件主要记录SSTable各个文件的管理信息，比如属于哪个Level，文件名称叫啥，最小key和最大key各自是多少
   const std::string manifest = DescriptorFileName(dbname_, 1);
   WritableFile* file;
+  // env_对应类PosixEnv
+  // 生成一个新的mainfest文件
   Status s = env_->NewWritableFile(manifest, &file);
   if (!s.ok()) {
     return s;
@@ -206,6 +210,7 @@ Status DBImpl::NewDB() {
   delete file;
   if (s.ok()) {
     // Make "CURRENT" file that points to the new manifest file.
+    // 设置current文件指向manifest文件
     s = SetCurrentFile(env_, dbname_, 1);
   } else {
     env_->RemoveFile(manifest);
@@ -290,18 +295,22 @@ void DBImpl::RemoveObsoleteFiles() {
 }
 
 Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
+    // 如果要进行操作，必须要保证锁是获得的
   mutex_.AssertHeld();
 
   // Ignore error from CreateDir since the creation of the DB is
   // committed only when the descriptor is created, and this directory
   // may already exist from a previous failed creation attempt.
+    // 创建目录时，忽略创建文件错误；这个时候的错误可能是文件已经存在，由于以前的操作残留的
   env_->CreateDir(dbname_);
   assert(db_lock_ == nullptr);
+    // 添加文件锁
   Status s = env_->LockFile(LockFileName(dbname_), &db_lock_);
   if (!s.ok()) {
     return s;
   }
 
+    // 获取当前db的current文件
   if (!env_->FileExists(CurrentFileName(dbname_))) {
     if (options_.create_if_missing) {
       Log(options_.info_log, "Creating DB %s since it was missing.",
@@ -321,6 +330,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
     }
   }
 
+    // 这里的recover是恢复什么？
+    // 这里应该是恢复cureent文件中对应的mainfest文件
   s = versions_->Recover(save_manifest);
   if (!s.ok()) {
     return s;
@@ -334,7 +345,9 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // Note that PrevLogNumber() is no longer used, but we pay
   // attention to it in case we are recovering a database
   // produced by an older version of leveldb.
+    // 获取当前日志的number
   const uint64_t min_log = versions_->LogNumber();
+    // 获取记录上次db服务正常时，正在使用的log序号
   const uint64_t prev_log = versions_->PrevLogNumber();
   std::vector<std::string> filenames;
   s = env_->GetChildren(dbname_, &filenames);
