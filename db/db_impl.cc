@@ -1348,7 +1348,9 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
   // Allow the group to grow up to a maximum size, but if the
   // original write is small, limit the growth so we do not slow
   // down the small write too much.
-  size_t max_size = 1 << 20;
+  size_t max_size = 1 << 20; // 默认1M
+
+  // 如果第一个待写入的数据大小小于128K时，max_size赋值为size + 128K
   if (size <= (128 << 10)) {
     max_size = size + (128 << 10);
   }
@@ -1358,6 +1360,8 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
   ++iter;  // Advance past "first"
   for (; iter != writers_.end(); ++iter) {
     Writer* w = *iter;
+
+    // 如果当前队列中的同步进制与队列中对一个同步机制不同，直接退出；相当于一次只合并处理与队首相同的同步进制
     if (w->sync && !first->sync) {
       // Do not include a sync write into a batch handled by a non-sync write.
       break;
@@ -1371,6 +1375,7 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
       }
 
       // Append to *result
+      // 将第一个batch的数据添加到result中
       if (result == first->batch) {
         // Switch to temporary batch instead of disturbing caller's batch
         result = tmp_batch_;
