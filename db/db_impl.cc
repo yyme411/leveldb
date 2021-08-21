@@ -517,6 +517,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   return status;
 }
 
+// 将imm_内存中的内容写入到sstable文件中
 Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
                                 Version* base) {
   mutex_.AssertHeld();
@@ -531,6 +532,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
+    //新生成一个Table_builder负责写文件
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
@@ -717,7 +719,12 @@ void DBImpl::BackgroundCall() {
 void DBImpl::BackgroundCompaction() {
   mutex_.AssertHeld();
 
+  // 如果当前存在immutable待合并内存信息时，优先合并
   if (imm_ != nullptr) {
+    /**
+     * 当前存minor compaction任务时，先执行minor compaction
+     * 合并操作分为minor和major合并，minor优先级最高
+     */
     CompactMemTable();
     return;
   }
