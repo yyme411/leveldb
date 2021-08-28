@@ -730,6 +730,8 @@ void DBImpl::BackgroundCompaction() {
   }
 
   Compaction* c;
+
+  // 存在手动合并操作时，manual_compaction_不为空
   bool is_manual = (manual_compaction_ != nullptr);
   InternalKey manual_end;
   if (is_manual) {
@@ -745,6 +747,7 @@ void DBImpl::BackgroundCompaction() {
         (m->end ? m->end->DebugString().c_str() : "(end)"),
         (m->done ? "(end)" : manual_end.DebugString().c_str()));
   } else {
+    // 不存在手动合并时，执行自动合并操作
     c = versions_->PickCompaction();
   }
 

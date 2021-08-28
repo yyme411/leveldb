@@ -495,6 +495,15 @@ int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key,
 }
 
 // Store in "*inputs" all files in "level" that overlap [begin,end]
+/**
+ * 实现方法：
+ * 1、检查当前文件最大值与用户输入的起始值比较，判断文件是否在待查找文件中
+ * 2、检查当前文件最小值是否与用户属于的结束值比较，判断文件是否在待查找文件中
+ * 3、当待操作字符存在文件时（可以全部包含也可以是部分包含）：
+ *   3.1 由于level0 存在重复区间的文件，所以当文件的最小值小于带查询起始值时，更新起始值为文件最小值；并重新查找所有文件
+ *   3.2 当文件的最大值大于带查询结束值时，更新结束值为文件最大值，并且重新查找当前level的所有文件
+ *   3.3 非level0层文件由于不存在区间重复的情况，所以只需要将包含在区间内的所有文件全局加入inputs中
+ */
 void Version::GetOverlappingInputs(int level, const InternalKey* begin,
                                    const InternalKey* end,
                                    std::vector<FileMetaData*>* inputs) {
@@ -1029,6 +1038,7 @@ void VersionSet::MarkFileNumberUsed(uint64_t number) {
   }
 }
 
+// 计算每个level总文件大小，通过该层文件计算score，已经下一次合并的level
 void VersionSet::Finalize(Version* v) {
   // Precomputed best level for next compaction
   int best_level = -1;
@@ -1048,11 +1058,15 @@ void VersionSet::Finalize(Version* v) {
       // file size is small (perhaps because of a small write-buffer
       // setting, or very high compression ratios, or lots of
       // overwrites/deletions).
+
+      // 计算level 0层文件数是否超过4个
       score = v->files_[level].size() /
               static_cast<double>(config::kL0_CompactionTrigger);
     } else {
       // Compute the ratio of current size to size limit.
       const uint64_t level_bytes = TotalFileSize(v->files_[level]);
+
+      //非level 0 层计算当前层文件数是否超过10M
       score =
           static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
     }
@@ -1185,6 +1199,10 @@ int64_t VersionSet::MaxNextLevelOverlappingBytes() {
 // Stores the minimal range that covers all entries in inputs in
 // *smallest, *largest.
 // REQUIRES: inputs is not empty
+
+/**
+ * 计算inputs中所有文件包含的所有内容
+ */
 void VersionSet::GetRange(const std::vector<FileMetaData*>& inputs,
                           InternalKey* smallest, InternalKey* largest) {
   assert(!inputs.empty());
@@ -1256,9 +1274,18 @@ Compaction* VersionSet::PickCompaction() {
 
   // We prefer compactions triggered by too much data in a level over
   // the compactions triggered by seeks.
+
+  /**
+   *  compaction_score_ 通过计算是否存在size超过level上限的值
+   *  1、level 0层是否文件个数超过4个；
+   *  2、非level1~7 层是否文件总大小超过10M
+   */
   const bool size_compaction = (current_->compaction_score_ >= 1);
+
+  // 查询时多次查询结果需要查询多个文件，文件需要合并
   const bool seek_compaction = (current_->file_to_compact_ != nullptr);
   if (size_compaction) {
+    // 获取当前待合并的level
     level = current_->compaction_level_;
     assert(level >= 0);
     assert(level + 1 < config::kNumLevels);
@@ -1267,12 +1294,15 @@ Compaction* VersionSet::PickCompaction() {
     // Pick the first file that comes after compact_pointer_[level]
     for (size_t i = 0; i < current_->files_[level].size(); i++) {
       FileMetaData* f = current_->files_[level][i];
+      // 如果当前compact为空，或者当前文件最大值比compact大；将文件添加到带合并操作中
       if (compact_pointer_[level].empty() ||
           icmp_.Compare(f->largest.Encode(), compact_pointer_[level]) > 0) {
         c->inputs_[0].push_back(f);
         break;
       }
     }
+
+    //如果当前compact_pointer不为空，且compact_pointer的最大值，比当前待合并文件的所有最大值大
     if (c->inputs_[0].empty()) {
       // Wrap-around to the beginning of the key space
       c->inputs_[0].push_back(current_->files_[level][0]);
@@ -1289,6 +1319,7 @@ Compaction* VersionSet::PickCompaction() {
   c->input_version_->Ref();
 
   // Files in level 0 may overlap each other, so pick up all overlapping ones
+  // 由于level 0可能每个文件都存在重叠，所以需要对level0中的所有文件遍历
   if (level == 0) {
     InternalKey smallest, largest;
     GetRange(c->inputs_[0], &smallest, &largest);
