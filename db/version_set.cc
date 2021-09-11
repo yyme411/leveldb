@@ -1295,8 +1295,7 @@ Compaction* VersionSet::PickCompaction() {
     for (size_t i = 0; i < current_->files_[level].size(); i++) {
       FileMetaData* f = current_->files_[level][i];
       // 如果当前compact为空，或者当前文件最大值比compact大；将文件添加到带合并操作中
-      if (compact_pointer_[level].empty() ||
-          icmp_.Compare(f->largest.Encode(), compact_pointer_[level]) > 0) {
+      if (compact_pointer_[level].empty() || icmp_.Compare(f->largest.Encode(), compact_pointer_[level]) > 0) {
         c->inputs_[0].push_back(f);
         break;
       }
@@ -1355,17 +1354,15 @@ bool FindLargestKey(const InternalKeyComparator& icmp,
 
 // Finds minimum file b2=(l2, u2) in level file for which l2 > u1 and
 // user_key(l2) = user_key(u1)
-FileMetaData* FindSmallestBoundaryFile(
-    const InternalKeyComparator& icmp,
-    const std::vector<FileMetaData*>& level_files,
-    const InternalKey& largest_key) {
+FileMetaData* FindSmallestBoundaryFile(const InternalKeyComparator& icmp,
+    const std::vector<FileMetaData*>& level_files, const InternalKey& largest_key)
+{
   const Comparator* user_cmp = icmp.user_comparator();
   FileMetaData* smallest_boundary_file = nullptr;
   for (size_t i = 0; i < level_files.size(); ++i) {
     FileMetaData* f = level_files[i];
     if (icmp.Compare(f->smallest, largest_key) > 0 &&
-        user_cmp->Compare(f->smallest.user_key(), largest_key.user_key()) ==
-            0) {
+        user_cmp->Compare(f->smallest.user_key(), largest_key.user_key()) == 0) {
       if (smallest_boundary_file == nullptr ||
           icmp.Compare(f->smallest, smallest_boundary_file->smallest) < 0) {
         smallest_boundary_file = f;
@@ -1414,6 +1411,9 @@ void AddBoundaryInputs(const InternalKeyComparator& icmp,
   }
 }
 
+/**
+ * 用于获取同级别以及更上一层（level+1）中满足合并范围的文件，这样就能构成待合并的文件集合
+*/
 void VersionSet::SetupOtherInputs(Compaction* c) {
   const int level = c->level();
   InternalKey smallest, largest;
@@ -1439,13 +1439,11 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
     const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
     const int64_t expanded0_size = TotalFileSize(expanded0);
     if (expanded0.size() > c->inputs_[0].size() &&
-        inputs1_size + expanded0_size <
-            ExpandedCompactionByteSizeLimit(options_)) {
+        inputs1_size + expanded0_size < ExpandedCompactionByteSizeLimit(options_)) {
       InternalKey new_start, new_limit;
       GetRange(expanded0, &new_start, &new_limit);
       std::vector<FileMetaData*> expanded1;
-      current_->GetOverlappingInputs(level + 1, &new_start, &new_limit,
-                                     &expanded1);
+      current_->GetOverlappingInputs(level + 1, &new_start, &new_limit, &expanded1);
       AddBoundaryInputs(icmp_, current_->files_[level + 1], &expanded1);
       if (expanded1.size() == c->inputs_[1].size()) {
         Log(options_->info_log,
