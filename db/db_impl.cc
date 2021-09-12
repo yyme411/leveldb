@@ -104,6 +104,15 @@ Options SanitizeOptions(const std::string& dbname,
   ClipToRange(&result.write_buffer_size, 64 << 10, 1 << 30);
   ClipToRange(&result.max_file_size, 1 << 20, 1 << 30);
   ClipToRange(&result.block_size, 1 << 10, 4 << 20);
+
+  if (result.debug_log == nullptr) {
+    Status s = src.env->NewLogger("/var/log/leveldb.log", &result.debug_log);
+    if (!s.ok()) {
+      // No place suitable for logging
+      result.debug_log = nullptr;
+    }
+  }
+
   if (result.info_log == nullptr) {
     // Open a log file in the same directory as the db
     src.env->CreateDir(dbname);  // In case it does not exist
@@ -190,6 +199,8 @@ Status DBImpl::NewDB() {
   // mainfest
   // 文件主要记录SSTable各个文件的管理信息，比如属于哪个Level，文件名称叫啥，最小key和最大key各自是多少
   const std::string manifest = DescriptorFileName(dbname_, 1);
+
+  Log(options_.debug_log, "create new db name(%s), and manifest file(%s)", dbname_.c_str(), manifest.c_str());
   WritableFile* file;
   // env_对应类PosixEnv
   // 生成一个新的mainfest文件
@@ -587,6 +598,7 @@ void DBImpl::CompactMemTable() {
 
   if (s.ok()) {
     // Commit to the new state
+    Log(options_.debug_log, "imm hava merge success and release memory.");
     imm_->Unref();
     imm_ = nullptr;
     has_imm_.store(false, std::memory_order_release);
@@ -725,6 +737,7 @@ void DBImpl::BackgroundCompaction() {
      * 当前存minor compaction任务时，先执行minor compaction
      * 合并操作分为minor和major合并，minor优先级最高
      */
+    Log(options_.debug_log, "imm is not null, so compact memtable first.");
     CompactMemTable();
     return;
   }
@@ -741,7 +754,7 @@ void DBImpl::BackgroundCompaction() {
     if (c != nullptr) {
       manual_end = c->input(0, c->num_input_files(0) - 1)->largest;
     }
-    Log(options_.info_log,
+    Log(options_.debug_log,
         "Manual compaction at level-%d from %s .. %s; will stop at %s\n",
         m->level, (m->begin ? m->begin->DebugString().c_str() : "(begin)"),
         (m->end ? m->end->DebugString().c_str() : "(end)"),
@@ -766,7 +779,7 @@ void DBImpl::BackgroundCompaction() {
       RecordBackgroundError(status);
     }
     VersionSet::LevelSummaryStorage tmp;
-    Log(options_.info_log, "Moved #%lld to level-%d %lld bytes %s: %s\n",
+    Log(options_.debug_log, "Moved #%lld to level-%d %lld bytes %s: %s\n",
         static_cast<unsigned long long>(f->number), c->level() + 1,
         static_cast<unsigned long long>(f->file_size),
         status.ToString().c_str(), versions_->LevelSummary(&tmp));

@@ -68,6 +68,9 @@ struct LEVELDB_EXPORT Options {
   // in the same directory as the DB contents if info_log is null.
   Logger* info_log = nullptr;
 
+  // 打印过程日志到/var/log/leveldb.log中
+  Logger* debug_log = nullptr;
+
   // -------------------
   // Parameters that affect performance
 
