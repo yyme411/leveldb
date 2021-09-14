@@ -36,6 +36,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     meta->smallest.DecodeFrom(iter->key());
     Slice key;
 
+    Log(options.debug_log, "build new table name(%s)", fname.c_str());
     // 将memtabe中的记录，逐条写入sstable
     for (; iter->Valid(); iter->Next()) {
       key = iter->key();
@@ -65,6 +66,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
 
     if (s.ok()) {
       // Verify that the table is usable
+      Log(options.debug_log, "update table cache for level 0");
       Iterator* it = table_cache->NewIterator(ReadOptions(), meta->number,
                                               meta->file_size);
       s = it->status();

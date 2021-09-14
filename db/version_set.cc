@@ -784,6 +784,7 @@ void VersionSet::AppendVersion(Version* v) {
 }
 
 Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
+  Log(options_->debug_log, "[%s:%u] start versionset for LogAndApply", __FUNCTION__, __LINE__);
   if (edit->has_log_number_) {
     assert(edit->log_number_ >= log_number_);
     assert(edit->log_number_ < next_file_number_);
@@ -1060,15 +1061,15 @@ void VersionSet::Finalize(Version* v) {
       // overwrites/deletions).
 
       // 计算level 0层文件数是否超过4个
-      score = v->files_[level].size() /
-              static_cast<double>(config::kL0_CompactionTrigger);
+      score = v->files_[level].size() / static_cast<double>(config::kL0_CompactionTrigger);
+      Log(options_->debug_log, "level 0 file number(%d)", v->files_[level].size());
     } else {
       // Compute the ratio of current size to size limit.
       const uint64_t level_bytes = TotalFileSize(v->files_[level]);
 
       //非level 0 层计算当前层文件数是否超过10M
-      score =
-          static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
+      score = static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
+      Log(options_->debug_log, "level(%u) file size(%llu)", level, level_bytes);
     }
 
     if (score > best_score) {
@@ -1281,9 +1282,10 @@ Compaction* VersionSet::PickCompaction() {
    *  2、非level1~7 层是否文件总大小超过10M
    */
   const bool size_compaction = (current_->compaction_score_ >= 1);
-
   // 查询时多次查询结果需要查询多个文件，文件需要合并
   const bool seek_compaction = (current_->file_to_compact_ != nullptr);
+
+
   if (size_compaction) {
     // 获取当前待合并的level
     level = current_->compaction_level_;

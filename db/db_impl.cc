@@ -537,8 +537,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   meta.number = versions_->NewFileNumber();
   pending_outputs_.insert(meta.number);
   Iterator* iter = mem->NewIterator();
-  Log(options_.info_log, "Level-0 table #%llu: started",
-      (unsigned long long)meta.number);
+  Log(options_.debug_log, "Level-0 table #%llu: started", (unsigned long long)meta.number);
 
   Status s;
   {
@@ -548,9 +547,8 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     mutex_.Lock();
   }
 
-  Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s",
-      (unsigned long long)meta.number, (unsigned long long)meta.file_size,
-      s.ToString().c_str());
+  Log(options_.debug_log, "Level-0 table #%llu: %lld bytes %s",
+      (unsigned long long)meta.number, (unsigned long long)meta.file_size, s.ToString().c_str());
   delete iter;
   pending_outputs_.erase(meta.number);
 
@@ -563,8 +561,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     if (base != nullptr) {
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
-    edit->AddFile(level, meta.number, meta.file_size, meta.smallest,
-                  meta.largest);
+    edit->AddFile(level, meta.number, meta.file_size, meta.smallest, meta.largest);
   }
 
   CompactionStats stats;
@@ -598,7 +595,7 @@ void DBImpl::CompactMemTable() {
 
   if (s.ok()) {
     // Commit to the new state
-    Log(options_.debug_log, "imm hava merge success and release memory.");
+    Log(options_.debug_log, "imm have merge success and release memory.");
     imm_->Unref();
     imm_ = nullptr;
     has_imm_.store(false, std::memory_order_release);
@@ -754,8 +751,7 @@ void DBImpl::BackgroundCompaction() {
     if (c != nullptr) {
       manual_end = c->input(0, c->num_input_files(0) - 1)->largest;
     }
-    Log(options_.debug_log,
-        "Manual compaction at level-%d from %s .. %s; will stop at %s\n",
+    Log(options_.debug_log, "Manual compaction at level-%d from %s .. %s; will stop at %s\n",
         m->level, (m->begin ? m->begin->DebugString().c_str() : "(begin)"),
         (m->end ? m->end->DebugString().c_str() : "(end)"),
         (m->done ? "(end)" : manual_end.DebugString().c_str()));
