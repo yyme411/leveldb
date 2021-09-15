@@ -128,6 +128,7 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
     // Need to check against all files
     for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
+      // 不在重叠区域时
       if (AfterFile(ucmp, smallest_user_key, f) ||
           BeforeFile(ucmp, largest_user_key, f)) {
         // No overlap
@@ -470,6 +471,7 @@ bool Version::OverlapInLevel(int level, const Slice* smallest_user_key,
 int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key,
                                         const Slice& largest_user_key) {
   int level = 0;
+  // 新生成文件的最小值与最大值，与level0 中的输入文件不存在重叠时
   if (!OverlapInLevel(0, &smallest_user_key, &largest_user_key)) {
     // Push to next level if there is no overlap in next level,
     // and the #bytes overlapping in the level after that are limited.
@@ -477,7 +479,10 @@ int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key,
     InternalKey limit(largest_user_key, 0, static_cast<ValueType>(0));
     std::vector<FileMetaData*> overlaps;
     while (level < config::kMaxMemCompactLevel) {
+      // 在level＋ 1层文件中存在重叠的文件时，直接退出
       if (OverlapInLevel(level + 1, &smallest_user_key, &largest_user_key)) {
+        Log(options_.debug_log, "[%s:%u] Level(%u)) table file is over range（%s-%s)", __FUNCTION__, __LINE__,
+          level + 1, smallest_user_key->data(), largest_user_key->data());
         break;
       }
       if (level + 2 < config::kNumLevels) {
