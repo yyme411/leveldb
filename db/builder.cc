@@ -20,24 +20,24 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
   meta->file_size = 0;
   iter->SeekToFirst();
 
-  // »ñÈ¡tableÎÄ¼şÃû
+  // ï¿½ï¿½È¡tableï¿½Ä¼ï¿½ï¿½ï¿½
   std::string fname = TableFileName(dbname, meta->number);
   if (iter->Valid()) {
     WritableFile* file;
 
-    // ´´½¨Ğ´¶ÔÏóÎÄ¼ş£¬Èç¹û¶ÔÏóÎÄ¼şÒÑ¾­´æÔÚ£¬É¾³ıµ±Ç°´æÔÚµÄÎÊÌâ
+    // ï¿½ï¿½ï¿½ï¿½Ğ´ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ú£ï¿½É¾ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½
     s = env->NewWritableFile(fname, &file);
     if (!s.ok()) {
       return s;
     }
 
-    // Í¨¹ıÎÄ¼şÉú³ÉĞÂµÄbuilder£¬²¢ÇÒ½«sstableÄÚÈİÖğÌõĞ´Èëµ½builderÖĞ
+    // Í¨ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½builderï¿½ï¿½ï¿½ï¿½ï¿½Ò½ï¿½sstableï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ´ï¿½ëµ½builderï¿½ï¿½
     TableBuilder* builder = new TableBuilder(options, file);
     meta->smallest.DecodeFrom(iter->key());
     Slice key;
 
-    Log(options.debug_log, "build new table name(%s)", fname.c_str());
-    // ½«memtabeÖĞµÄ¼ÇÂ¼£¬ÖğÌõĞ´Èësstable
+    Log(options.debug_log, "[%s:%u] build new table name(%s)", __FUNCTION__, __LINE__, fname.c_str());
+    // ï¿½ï¿½memtabeï¿½ĞµÄ¼ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ğ´ï¿½ï¿½sstable
     for (; iter->Valid(); iter->Next()) {
       key = iter->key();
       builder->Add(key, iter->value());
@@ -66,7 +66,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
 
     if (s.ok()) {
       // Verify that the table is usable
-      Log(options.debug_log, "update table cache for level 0");
+      Log(options.debug_log, "[%s:%u] update table cache for level 0", __FUNCTION__, __LINE__);
       Iterator* it = table_cache->NewIterator(ReadOptions(), meta->number,
                                               meta->file_size);
       s = it->status();
