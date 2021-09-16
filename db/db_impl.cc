@@ -71,7 +71,7 @@ struct DBImpl::CompactionState {
 
   Compaction* const compaction;
 
-  // Ð¡ÓÚsmallest_snapshotµÄ¼ÇÂ¼¿ÉÒÔÉ¾³ý¡£
+  // Ð¡ï¿½ï¿½smallest_snapshotï¿½Ä¼ï¿½Â¼ï¿½ï¿½ï¿½ï¿½É¾ï¿½ï¿½ï¿½ï¿½
   // Sequence numbers < smallest_snapshot are not significant since we
   // will never have to service a snapshot below smallest_snapshot.
   // Therefore if we have seen a sequence number S <= smallest_snapshot,
@@ -197,13 +197,13 @@ Status DBImpl::NewDB() {
   new_db.SetLastSequence(0);
 
   // mainfest
-  // ÎÄ¼þÖ÷Òª¼ÇÂ¼SSTable¸÷¸öÎÄ¼þµÄ¹ÜÀíÐÅÏ¢£¬±ÈÈçÊôÓÚÄÄ¸öLevel£¬ÎÄ¼þÃû³Æ½ÐÉ¶£¬×îÐ¡keyºÍ×î´ókey¸÷×ÔÊÇ¶àÉÙ
+  // ï¿½Ä¼ï¿½ï¿½ï¿½Òªï¿½ï¿½Â¼SSTableï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ä¹ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¸ï¿½Levelï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Æ½ï¿½É¶ï¿½ï¿½ï¿½ï¿½Ð¡keyï¿½ï¿½ï¿½ï¿½ï¿½keyï¿½ï¿½ï¿½ï¿½ï¿½Ç¶ï¿½ï¿½ï¿½
   const std::string manifest = DescriptorFileName(dbname_, 1);
 
   Log(options_.debug_log, "create new db name(%s), and manifest file(%s)", dbname_.c_str(), manifest.c_str());
   WritableFile* file;
-  // env_¶ÔÓ¦ÀàPosixEnv
-  // Éú³ÉÒ»¸öÐÂµÄmainfestÎÄ¼þ
+  // env_ï¿½ï¿½Ó¦ï¿½ï¿½PosixEnv
+  // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Âµï¿½mainfestï¿½Ä¼ï¿½
   Status s = env_->NewWritableFile(manifest, &file);
   if (!s.ok()) {
     return s;
@@ -223,7 +223,7 @@ Status DBImpl::NewDB() {
   delete file;
   if (s.ok()) {
     // Make "CURRENT" file that points to the new manifest file.
-    // ÉèÖÃcurrentÎÄ¼þÖ¸ÏòmanifestÎÄ¼þ
+    // ï¿½ï¿½ï¿½ï¿½currentï¿½Ä¼ï¿½Ö¸ï¿½ï¿½manifestï¿½Ä¼ï¿½
     s = SetCurrentFile(env_, dbname_, 1);
   } else {
     env_->RemoveFile(manifest);
@@ -308,22 +308,22 @@ void DBImpl::RemoveObsoleteFiles() {
 }
 
 Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
-  // Èç¹ûÒª½øÐÐ²Ù×÷£¬±ØÐëÒª±£Ö¤ËøÊÇ»ñµÃµÄ
+  // ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Ö¤ï¿½ï¿½ï¿½Ç»ï¿½Ãµï¿½
   mutex_.AssertHeld();
 
   // Ignore error from CreateDir since the creation of the DB is
   // committed only when the descriptor is created, and this directory
   // may already exist from a previous failed creation attempt.
-  // ´´½¨Ä¿Â¼Ê±£¬ºöÂÔ´´½¨ÎÄ¼þ´íÎó£»Õâ¸öÊ±ºòµÄ´íÎó¿ÉÄÜÊÇÎÄ¼þÒÑ¾­´æÔÚ£¬ÓÉÓÚÒÔÇ°µÄ²Ù×÷²ÐÁôµÄ
+  // ï¿½ï¿½ï¿½ï¿½Ä¿Â¼Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½Ä²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   env_->CreateDir(dbname_);
   assert(db_lock_ == nullptr);
-  // Ìí¼ÓÎÄ¼þËø
+  // ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½
   Status s = env_->LockFile(LockFileName(dbname_), &db_lock_);
   if (!s.ok()) {
     return s;
   }
 
-  // »ñÈ¡µ±Ç°dbµÄcurrentÎÄ¼þ
+  // ï¿½ï¿½È¡ï¿½ï¿½Ç°dbï¿½ï¿½currentï¿½Ä¼ï¿½
   if (!env_->FileExists(CurrentFileName(dbname_))) {
     if (options_.create_if_missing) {
       Log(options_.info_log, "Creating DB %s since it was missing.",
@@ -343,8 +343,8 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
     }
   }
 
-  // ÕâÀïµÄrecoverÊÇ»Ö¸´Ê²Ã´£¿
-  // ÕâÀïÓ¦¸ÃÊÇ»Ö¸´cureentÎÄ¼þÖÐ¶ÔÓ¦µÄmainfestÎÄ¼þ
+  // ï¿½ï¿½ï¿½ï¿½ï¿½recoverï¿½Ç»Ö¸ï¿½Ê²Ã´ï¿½ï¿½
+  // ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½Ç»Ö¸ï¿½cureentï¿½Ä¼ï¿½ï¿½Ð¶ï¿½Ó¦ï¿½ï¿½mainfestï¿½Ä¼ï¿½
   s = versions_->Recover(save_manifest);
   if (!s.ok()) {
     return s;
@@ -358,9 +358,9 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // Note that PrevLogNumber() is no longer used, but we pay
   // attention to it in case we are recovering a database
   // produced by an older version of leveldb.
-  // »ñÈ¡µ±Ç°ÈÕÖ¾µÄnumber
+  // ï¿½ï¿½È¡ï¿½ï¿½Ç°ï¿½ï¿½Ö¾ï¿½ï¿½number
   const uint64_t min_log = versions_->LogNumber();
-  // »ñÈ¡¼ÇÂ¼ÉÏ´Îdb·þÎñÕý³£Ê±£¬ÕýÔÚÊ¹ÓÃµÄlogÐòºÅ
+  // ï¿½ï¿½È¡ï¿½ï¿½Â¼ï¿½Ï´ï¿½dbï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ãµï¿½logï¿½ï¿½ï¿½
   const uint64_t prev_log = versions_->PrevLogNumber();
   std::vector<std::string> filenames;
   s = env_->GetChildren(dbname_, &filenames);
@@ -528,7 +528,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   return status;
 }
 
-// ½«imm_ÄÚ´æÖÐµÄÄÚÈÝÐ´Èëµ½sstableÎÄ¼þÖÐ
+// ï¿½ï¿½imm_ï¿½Ú´ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ëµ½sstableï¿½Ä¼ï¿½ï¿½ï¿½
 Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
                                 Version* base) {
   mutex_.AssertHeld();
@@ -537,17 +537,17 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   meta.number = versions_->NewFileNumber();
   pending_outputs_.insert(meta.number);
   Iterator* iter = mem->NewIterator();
-  Log(options_.debug_log, "Level-0 table #%llu: started", (unsigned long long)meta.number);
+  Log(options_.debug_log, "[%s:%u] Level-0 table #%llu: started", __FUNCTION__, __LINE__, (unsigned long long)meta.number);
 
   Status s;
   {
     mutex_.Unlock();
-    //ÐÂÉú³ÉÒ»¸öTable_builder¸ºÔðÐ´ÎÄ¼þ
+    //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Table_builderï¿½ï¿½ï¿½ï¿½Ð´ï¿½Ä¼ï¿½
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
 
-  Log(options_.debug_log, "Level-0 table #%llu: %lld bytes %s",
+  Log(options_.debug_log, "[%s:%u] Level-0 table #%llu: %lld bytes %s", __FUNCTION__, __LINE__,
       (unsigned long long)meta.number, (unsigned long long)meta.file_size, s.ToString().c_str());
   delete iter;
   pending_outputs_.erase(meta.number);
@@ -559,6 +559,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     const Slice min_user_key = meta.smallest.user_key();
     const Slice max_user_key = meta.largest.user_key();
     if (base != nullptr) {
+      // æ–°ç”Ÿæˆçš„sstableæ–‡ä»¶ä¸­æ˜¯å¦ä¸Žè¾“å…¥åˆå¹¶æ–‡ä»¶é›†ä¸­å­˜åœ¨é‡å 
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
     edit->AddFile(level, meta.number, meta.file_size, meta.smallest, meta.largest);
@@ -731,11 +732,11 @@ void DBImpl::BackgroundCall() {
 void DBImpl::BackgroundCompaction() {
   mutex_.AssertHeld();
 
-  // Èç¹ûµ±Ç°´æÔÚimmutable´ýºÏ²¢ÄÚ´æÐÅÏ¢Ê±£¬ÓÅÏÈºÏ²¢
+  // ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½immutableï¿½ï¿½ï¿½Ï²ï¿½ï¿½Ú´ï¿½ï¿½ï¿½Ï¢Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ÈºÏ²ï¿½
   if (imm_ != nullptr) {
     /**
-     * µ±Ç°´æminor compactionÈÎÎñÊ±£¬ÏÈÖ´ÐÐminor compaction
-     * ºÏ²¢²Ù×÷·ÖÎªminorºÍmajorºÏ²¢£¬minorÓÅÏÈ¼¶×î¸ß
+     * ï¿½ï¿½Ç°ï¿½ï¿½minor compactionï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½minor compaction
+     * ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªminorï¿½ï¿½majorï¿½Ï²ï¿½ï¿½ï¿½minorï¿½ï¿½ï¿½È¼ï¿½ï¿½ï¿½ï¿½
      */
     Log(options_.debug_log, "imm is not null, so compact memtable first.");
     CompactMemTable();
@@ -744,7 +745,7 @@ void DBImpl::BackgroundCompaction() {
 
   Compaction* c;
 
-  // ´æÔÚÊÖ¶¯ºÏ²¢²Ù×÷Ê±£¬manual_compaction_²»Îª¿Õ
+  // ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½manual_compaction_ï¿½ï¿½Îªï¿½ï¿½
   bool is_manual = (manual_compaction_ != nullptr);
   InternalKey manual_end;
   if (is_manual) {
@@ -759,7 +760,7 @@ void DBImpl::BackgroundCompaction() {
         (m->end ? m->end->DebugString().c_str() : "(end)"),
         (m->done ? "(end)" : manual_end.DebugString().c_str()));
   } else {
-    // ²»´æÔÚÊÖ¶¯ºÏ²¢Ê±£¬Ö´ÐÐ×Ô¶¯ºÏ²¢²Ù×÷
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¶ï¿½ï¿½Ï²ï¿½Ê±ï¿½ï¿½Ö´ï¿½ï¿½ï¿½Ô¶ï¿½ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½
     c = versions_->PickCompaction();
   }
 
@@ -1234,69 +1235,69 @@ Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
   return DB::Delete(options, key);
 }
 
-// ´¦Àí¹ý³Ì
-// 1. ¶ÓÁÐ»¯ÇëÇó
-//     mutex lÉÏËøÖ®ºó, µ½ÁË"w.cv.Wait()"µÄÊ±ºò, »áÏÈÊÍ·ÅËøµÈ´ý,
-//     È»ºóÊÕµ½signalÊ±ÔÙ´ÎÉÏËø.
-//     Õâ¶Î´úÂëµÄ×÷ÓÃ¾ÍÊÇ¶àÏß³ÌÔÚÌá½»ÈÎÎñµÄÊ±ºò,Ò»¸ö½ÓÒ»¸öpush_back½ø¶ÓÁÐ.
-//     µ«Ö»ÓÐÎ»ÓÚ¶ÓÊ×µÄÏß³ÌÓÐ×Ê¸ñ¼ÌÐøÔËÐÐÏÂÈ¥.
-//     Ä¿µÄÊÇ°Ñ¶à¸öÐ´ÇëÇóºÏ²¢³ÉÒ»¸ö´óbatchÌáÉýÐ§ÂÊ.
-// 2. Ð´ÈëµÄÇ°ÆÚ¼ì²éºÍ±£Ö¤
-// 3. °´¸ñÊ½×é×°Êý¾ÝÎª¶þ½øÖÆ
-// 4. Ð´ÈëlogÎÄ¼þºÍmemtable
-// 5. »½ÐÑ¶ÓÁÐµÄÆäËûÈËÈ¥¸É»î£¬×Ô¼º·µ»Ø
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// 1. ï¿½ï¿½ï¿½Ð»ï¿½ï¿½ï¿½ï¿½ï¿½
+//     mutex lï¿½ï¿½ï¿½ï¿½Ö®ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½"w.cv.Wait()"ï¿½ï¿½Ê±ï¿½ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½È´ï¿½,
+//     È»ï¿½ï¿½ï¿½Õµï¿½signalÊ±ï¿½Ù´ï¿½ï¿½ï¿½ï¿½ï¿½.
+//     ï¿½ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¾ï¿½ï¿½Ç¶ï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½á½»ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½,Ò»ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½push_backï¿½ï¿½ï¿½ï¿½ï¿½ï¿½.
+//     ï¿½ï¿½Ö»ï¿½ï¿½Î»ï¿½Ú¶ï¿½ï¿½×µï¿½ï¿½ß³ï¿½ï¿½ï¿½ï¿½Ê¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥.
+//     Ä¿ï¿½ï¿½ï¿½Ç°Ñ¶ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½Ï²ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½batchï¿½ï¿½ï¿½ï¿½Ð§ï¿½ï¿½.
+// 2. Ð´ï¿½ï¿½ï¿½Ç°ï¿½Ú¼ï¿½ï¿½Í±ï¿½Ö¤
+// 3. ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½×°ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// 4. Ð´ï¿½ï¿½logï¿½Ä¼ï¿½ï¿½ï¿½memtable
+// 5. ï¿½ï¿½ï¿½Ñ¶ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È¥ï¿½É»î£¬ï¿½Ô¼ï¿½ï¿½ï¿½ï¿½ï¿½
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   Writer w(&mutex_);
   w.batch = updates;
   w.sync = options.sync;
   w.done = false;
 
-  // Í¨¹ýmutexËø±£Ö¤µ±Ç°²Ù×÷´®ÐÐ»¯
+  // Í¨ï¿½ï¿½mutexï¿½ï¿½ï¿½ï¿½Ö¤ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð»ï¿½
   MutexLock l(&mutex_);
 
-  // ½«µ±Ç°´ý¸üÐÂbatch¼ÓÈëµ½writersÖ´ÐÐ¶ÓÁÐÖÐ£¬Èç¹ûµ±Ç°¶ÓÁÐÖÐÓÐÆäËûÇëÇóÔÚÖ´ÐÐÊ±£¬¿ÉÒÔºÏ²¢ÎªÒ»¸öÇëÇóÖ´ÐÐ
+  // ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½batchï¿½ï¿½ï¿½ëµ½writersÖ´ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ÔºÏ²ï¿½ÎªÒ»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½
   writers_.push_back(&w);
 
-  // µ±Ç°¶ÓÁÐÖÐÓÐÆäËûÈÎÎñÕýÔÚÖ´ÐÐÊ±£¬µÈ´ýÆäËûÈÎÎñÖ´ÐÐÍê³É
+  // ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½Ê±ï¿½ï¿½ï¿½È´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½ï¿½
   /**
-   * 1¡¢¸ÃÇëÇó¿ÉÄÜ±»ÆäËûÈÎÎñºÏ²¢Ö´ÐÐ£»±»ÆäËûÈÎÎñÖ´ÐÐµ±Ç°×´Ì¬Îªdone£»ºóÐøÖ±½Ó·µ»Ø
-   * 2¡¢Èç¹ûµ±Ç°ÈÎÎñÎ´±»ºÏ²¢£¬´¦ÓÚ¶ÓÊ×Î»ÖÃÊ±£¬¼ÌÐøÖ´ÐÐÐ´²Ù×÷
+   * 1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ü±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï²ï¿½Ö´ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ðµï¿½Ç°×´Ì¬Îªdoneï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½
+   * 2ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½Î´ï¿½ï¿½ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ï¿½Î»ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½
    */
   while (!w.done && &w != writers_.front()) {
     w.cv.Wait();
   }
 
-  // writerÈÎÎñ±»ÆäËûwriterÈÎÎñÖ´ÐÐÍê³É£¬Ö±½Ó·µ»ØÖ´ÐÐ½á¹û
+  // writerï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½writerï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½ï¿½ï¿½É£ï¿½Ö±ï¿½Ó·ï¿½ï¿½ï¿½Ö´ï¿½Ð½ï¿½ï¿½
   if (w.done) {
     return w.status;
   }
 
   // May temporarily unlock and wait.
-  // Ð´ÈëÇ°µÄ¸÷ÖÖ¼ì²é¡£ÊÇ·ñ¸ÃÍ£Ð´,ÊÇ·ñ¸ÃÇÐmemtable,ÊÇ·ñ¸Ãcompact
+  // Ð´ï¿½ï¿½Ç°ï¿½Ä¸ï¿½ï¿½Ö¼ï¿½é¡£ï¿½Ç·ï¿½ï¿½Í£Ð´,ï¿½Ç·ï¿½ï¿½ï¿½ï¿½memtable,ï¿½Ç·ï¿½ï¿½compact
   /**
-   * 1¡¢¼ì²élevel0 ÖÐÊÇ·ñ´æÔÚ¿ÉÓÃÄÚ´æ£º
-   *  1.1 level0 ÖÐÄÚ´æÎ´´ïµ½ÉÏÏÞ£¬·µ»Ø¿ÉÐ´
-   *  1.2 level0 ÖÐÄÚ´æ´ïµ½ÄÚ´æÉÏÏÞ£¬½«ÄÚ´æÖÐµÄÊý¾ÝÐ´Èëµ½imuable
-   * memtableÖÐ£¬²¢ÇÒÓÉºóÌ¨Íê³ÉcompactÈÎÎñ 1.3 level0
-   * ÖÐÄÚ´æ´ïµ½ÄÚ´æÉÏÏÞÉêÇëÐÂµÄÄÚ´æ£¬´¥·¢µ±Ç°´æÔÚ¿ÉÓÃÄÚ´æÁ÷³Ì
-   * 2¡¢¼ì²élevel0ÖÐµÄÎÄ¼þÊýÊÇ·ñ´ïµ½level0ÒªÇóµÄ×î´óÎÄ¼þÊý¶ÔÓ¦µÄslowÎÄ¼þÊý£¨8£©ÒÔ¼°Í£Ö¹Ð´ÎÄ¼þÊý£¨12£©
-   *  2.1 ´ïµ½ÈíÏÞÖÆ¼°ÎÄ¼þÊý´ïµ½8Ê±£¬ÈÃ³öCPU
-   *  2.2 ´ïµ½Í£Ö¹Ð´ÎÄ¼þÊÇÊý12Ê±£¬µÈ´ý½«level0ÖÐµÄÎÄ¼þºÏ²¢µ½level1
+   * 1ï¿½ï¿½ï¿½ï¿½ï¿½level0 ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½Ú´æ£º
+   *  1.1 level0 ï¿½ï¿½ï¿½Ú´ï¿½Î´ï¿½ïµ½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½Ø¿ï¿½Ð´
+   *  1.2 level0 ï¿½ï¿½ï¿½Ú´ï¿½ïµ½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½Þ£ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ëµ½imuable
+   * memtableï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Éºï¿½Ì¨ï¿½ï¿½ï¿½compactï¿½ï¿½ï¿½ï¿½ 1.3 level0
+   * ï¿½ï¿½ï¿½Ú´ï¿½ïµ½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½ï¿½Ú´æ£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½ï¿½ï¿½
+   * 2ï¿½ï¿½ï¿½ï¿½ï¿½level0ï¿½Ðµï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ïµ½level0Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½slowï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½8ï¿½ï¿½ï¿½Ô¼ï¿½Í£Ö¹Ð´ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½12ï¿½ï¿½
+   *  2.1 ï¿½ïµ½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¼ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ïµ½8Ê±ï¿½ï¿½ï¿½Ã³ï¿½CPU
+   *  2.2 ï¿½ïµ½Í£Ö¹Ð´ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½12Ê±ï¿½ï¿½ï¿½È´ï¿½ï¿½ï¿½level0ï¿½Ðµï¿½ï¿½Ä¼ï¿½ï¿½Ï²ï¿½ï¿½ï¿½level1
    */
   Status status = MakeRoomForWrite(updates == nullptr);
 
-  // »ñÈ¡±¾´ÎÐ´Èë¶ÔÓ¦µÄ°æ±¾ºÅ
+  // ï¿½ï¿½È¡ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Ó¦ï¿½Ä°æ±¾ï¿½ï¿½
   uint64_t last_sequence = versions_->LastSequence();
 
-  // ³õÊ¼»¯µ±Ç°Ð´²Ù×÷
+  // ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ç°Ð´ï¿½ï¿½ï¿½ï¿½
   Writer* last_writer = &w;
 
-  // Èç¹ûlevel0 ²ã¿Õ¼ä×ã¹»£¬²¢ÇÒÖ´ÐÐupdates²Ù×÷
+  // ï¿½ï¿½ï¿½level0 ï¿½ï¿½Õ¼ï¿½ï¿½ã¹»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½updatesï¿½ï¿½ï¿½ï¿½
   if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
-    // »ñÈ¡µ±Ç°Ð´²Ù×÷¶ÔÓ¦µÄwrite batch£º´Ó´øÐ´¶ÓÁÐÖÐºÏ²¢ÏàÍ¬ÀàÐÍµÄ²Ù×÷
+    // ï¿½ï¿½È¡ï¿½ï¿½Ç°Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½write batchï¿½ï¿½ï¿½Ó´ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ÐºÏ²ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ÍµÄ²ï¿½ï¿½ï¿½
     WriteBatch* write_batch = BuildBatchGroup(&last_writer);
 
-    // ¸üÐÂ°æ±¾ºÅÉèÖÃµ±Ç°Ð´²Ù×÷°æ±¾ºÅÎªµ±Ç°ÏµÍ³°æ±¾ºÅ+1
+    // ï¿½ï¿½ï¿½Â°æ±¾ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½Ç°Ð´ï¿½ï¿½ï¿½ï¿½ï¿½æ±¾ï¿½ï¿½Îªï¿½ï¿½Ç°ÏµÍ³ï¿½æ±¾ï¿½ï¿½+1
     WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
     last_sequence += WriteBatchInternal::Count(write_batch);
 
@@ -1315,11 +1316,11 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         }
       }
       if (status.ok()) {
-        // write_batch²Ù×÷Ð´Èëlog³É¹¦£¬½«wrtie_batchÄÚÈÝÌí¼Óµ½level0¶ÔÓ¦µÄmemtableÖÐ
+        // write_batchï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½logï¿½É¹ï¿½ï¿½ï¿½ï¿½ï¿½wrtie_batchï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½level0ï¿½ï¿½Ó¦ï¿½ï¿½memtableï¿½ï¿½
         status = WriteBatchInternal::InsertInto(write_batch, mem_);
       }
 
-      // ÓÉÓÚÐ´logÓë¸üÐÂÄÚ´æ¿ÉÒÔ²»ÔÙlockÖÐ½øÐÐ£¬ËùÒÔÔÚÐ´logÓëÐ´ÄÚ´æÇ°½«ËøÊÍ·ÅÔÙÌí¼ÓËø£»ÎÒµÄÀí½âÕâÀïÊÍ·ÅËø¿ÉÒÔ½µµÍcpu¾ºÕùËø
+      // ï¿½ï¿½ï¿½ï¿½Ð´logï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½ï¿½ï¿½Ô²ï¿½ï¿½ï¿½lockï¿½Ð½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´logï¿½ï¿½Ð´ï¿½Ú´ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô½ï¿½ï¿½ï¿½cpuï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
       mutex_.Lock();
       if (sync_error) {
         // The state of the log file is indeterminate: the log record we
@@ -1337,14 +1338,14 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     Writer* ready = writers_.front();
     writers_.pop_front();
 
-    // ÕâÀïÎªÊ²Ã´ÊÇ¼ì²éµ±Ç°´¦Àí¶ÓÁÐÖÐÓë´ý²Ù×÷²»Í¬Ê±£¬½«ÆäËûÈÎÎñÉèÖÃÎªÍê³É×´Ì¬£¬²¢ÇÒ»½ÐÑ£»writers_ÖÐ¿ÉÄÜ²»ÊÇÍ¬ÀàÐÍµÄÎ´Ö´ÐÐºÏ²¢²Ù×÷
+    // ï¿½ï¿½ï¿½ï¿½ÎªÊ²Ã´ï¿½Ç¼ï¿½éµ±Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½Ñ£ï¿½writers_ï¿½Ð¿ï¿½ï¿½Ü²ï¿½ï¿½ï¿½Í¬ï¿½ï¿½ï¿½Íµï¿½Î´Ö´ï¿½ÐºÏ²ï¿½ï¿½ï¿½ï¿½ï¿½
     if (ready != &w) {
       ready->status = status;
       ready->done = true;
       ready->cv.Signal();
     }
 
-    // µ±Ç°²Ù×÷batchÒÑ¾­´ïµ½×îÐÂ¸üÐÂ²Ù×÷batchÊ±£¬·µ»Ø
+    // ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½batchï¿½Ñ¾ï¿½ï¿½ïµ½ï¿½ï¿½ï¿½Â¸ï¿½ï¿½Â²ï¿½ï¿½ï¿½batchÊ±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (ready == last_writer) break;
   }
 
@@ -1370,9 +1371,9 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
   // Allow the group to grow up to a maximum size, but if the
   // original write is small, limit the growth so we do not slow
   // down the small write too much.
-  size_t max_size = 1 << 20; // Ä¬ÈÏ1M
+  size_t max_size = 1 << 20; // Ä¬ï¿½ï¿½1M
 
-  // Èç¹ûµÚÒ»¸ö´ýÐ´ÈëµÄÊý¾Ý´óÐ¡Ð¡ÓÚ128KÊ±£¬max_size¸³ÖµÎªsize + 128K
+  // ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý´ï¿½Ð¡Ð¡ï¿½ï¿½128KÊ±ï¿½ï¿½max_sizeï¿½ï¿½ÖµÎªsize + 128K
   if (size <= (128 << 10)) {
     max_size = size + (128 << 10);
   }
@@ -1383,7 +1384,7 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
   for (; iter != writers_.end(); ++iter) {
     Writer* w = *iter;
 
-    // Èç¹ûµ±Ç°¶ÓÁÐÖÐµÄÍ¬²½½øÖÆÓë¶ÓÁÐÖÐ¶ÔÒ»¸öÍ¬²½»úÖÆ²»Í¬£¬Ö±½ÓÍË³ö£»Ïàµ±ÓÚÒ»´ÎÖ»ºÏ²¢´¦ÀíÓë¶ÓÊ×ÏàÍ¬µÄÍ¬²½½øÖÆ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½Ò»ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½Æ²ï¿½Í¬ï¿½ï¿½Ö±ï¿½ï¿½ï¿½Ë³ï¿½ï¿½ï¿½ï¿½àµ±ï¿½ï¿½Ò»ï¿½ï¿½Ö»ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬ï¿½ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     if (w->sync && !first->sync) {
       // Do not include a sync write into a batch handled by a non-sync write.
       break;
@@ -1397,7 +1398,7 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
       }
 
       // Append to *result
-      // ½«µÚÒ»¸öbatchµÄÊý¾ÝÌí¼Óµ½resultÖÐ
+      // ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½batchï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Óµï¿½resultï¿½ï¿½
       if (result == first->batch) {
         // Switch to temporary batch instead of disturbing caller's batch
         result = tmp_batch_;
@@ -1414,13 +1415,13 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
 // REQUIRES: mutex_ is held
 // REQUIRES: this thread is currently at the front of the writer queue
 /**
- * 1¡¢¼ì²éµ±Ç°ºóÌ¨ÈÎÎñÖ´ÐÐ½á¹û£¬Èç¹ûµ±Ç°ºóÌ¨ÈÎÎñÖ´ÐÐÊ§°Ü£¬²¢ÇÒ½«×´Ì¬ÉèÖÃÎªºóÌ¨ÈÎÎñÖ±½Ó½á¹û·µ»Ø
- * 2¡¢µ±Ç°´æÔÚ¸üÐÂ²Ù×÷£¨¸üÐÂ²Ù×÷²»Îª¿ÕÊ±£©,²¢ÇÒµ±Ç°level0²ãÎÄ¼þÊý³¬¹ý8¸ö£»µÈ´ý1s²¢ÇÒÈÃ³öCPU
- * 3¡¢µ±Ç°´æÔÚ¸üÐÂ²Ù×÷£¬²¢ÇÒµ±Ç°level0 ´æÔÚÊ£Óà¿Õ¼äÖ±½Ó·µ»Ø³É¹¦
- * 4¡¢µ±Ç°´æÔÚmajorÈÎÎñºÏ²¢¼°imm½Ó¿Ú²»Îª¿ÕÊ±£¬µÈ´ýºÏ²¢ÈÎÎñ½áÊø
- * 5¡¢µ±Ç°level0²ãÎÄ¼þ¸öÊý´ïµ½12£¬µÈ´ýºÏ²¢²Ù×÷
- * 6¡¢Imuable memtableÒÑ¾­compactµ½´ÅÅÌÁË£¬level0µÄÎÄ¼þÊýÄ¿Ò²·ûºÏÒªÇó£¬ÕâÊ±ºòµ±Ç°µÄmemtable¿ÉÒÔ×ª»»³ÉImuable memtable£¬
- * ²¢Æô¶¯ºóÌ¨compact¡£Í¬Ê±Éú³ÉÐÂµÄmemtable¡¢logÓÃÓÚÊý¾ÝµÄÐ´Èë
+ * 1ï¿½ï¿½ï¿½ï¿½éµ±Ç°ï¿½ï¿½Ì¨ï¿½ï¿½ï¿½ï¿½Ö´ï¿½Ð½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½Ì¨ï¿½ï¿½ï¿½ï¿½Ö´ï¿½ï¿½Ê§ï¿½Ü£ï¿½ï¿½ï¿½ï¿½Ò½ï¿½×´Ì¬ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ì¨ï¿½ï¿½ï¿½ï¿½Ö±ï¿½Ó½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * 2ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½Â²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â²ï¿½ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ê±ï¿½ï¿½,ï¿½ï¿½ï¿½Òµï¿½Ç°level0ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½8ï¿½ï¿½ï¿½ï¿½ï¿½È´ï¿½1sï¿½ï¿½ï¿½ï¿½ï¿½Ã³ï¿½CPU
+ * 3ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ú¸ï¿½ï¿½Â²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òµï¿½Ç°level0 ï¿½ï¿½ï¿½ï¿½Ê£ï¿½ï¿½Õ¼ï¿½Ö±ï¿½Ó·ï¿½ï¿½Ø³É¹ï¿½
+ * 4ï¿½ï¿½ï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½majorï¿½ï¿½ï¿½ï¿½Ï²ï¿½ï¿½ï¿½immï¿½Ó¿Ú²ï¿½Îªï¿½ï¿½Ê±ï¿½ï¿½ï¿½È´ï¿½ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * 5ï¿½ï¿½ï¿½ï¿½Ç°level0ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ïµ½12ï¿½ï¿½ï¿½È´ï¿½ï¿½Ï²ï¿½ï¿½ï¿½ï¿½ï¿½
+ * 6ï¿½ï¿½Imuable memtableï¿½Ñ¾ï¿½compactï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë£ï¿½level0ï¿½ï¿½ï¿½Ä¼ï¿½ï¿½ï¿½Ä¿Ò²ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ç°ï¿½ï¿½memtableï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½ï¿½ï¿½Imuable memtableï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¨compactï¿½ï¿½Í¬Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½memtableï¿½ï¿½logï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ýµï¿½Ð´ï¿½ï¿½
  */
 Status DBImpl::MakeRoomForWrite(bool force) {
   mutex_.AssertHeld();
@@ -1478,7 +1479,7 @@ Status DBImpl::MakeRoomForWrite(bool force) {
       mem_ = new MemTable(internal_comparator_);
       mem_->Ref();
       force = false;  // Do not force another compaction if have room
-      // Æô¶¯ºóÌ¨ÈÎÎñ
+      // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¨ï¿½ï¿½ï¿½ï¿½
       MaybeScheduleCompaction();
     }
   }
@@ -1567,11 +1568,11 @@ void DBImpl::GetApproximateSizes(const Range* range, int n, uint64_t* sizes) {
 
 // Default implementations of convenience methods that subclasses of DB
 // can call if they wish
-// Ð´²Ù×÷Èë¿Ú
+// Ð´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
   WriteBatch batch;
 
-  // leveldbËùÓÐ²Ù×÷¾ùÒÑwriteBatchµÄ·½Ê½½øÐÐ²Ù×÷£»½«keyÓëvalueÌí¼Óµ½batch reqÖÐ
+  // leveldbï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½writeBatchï¿½Ä·ï¿½Ê½ï¿½ï¿½ï¿½Ð²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½keyï¿½ï¿½valueï¿½ï¿½ï¿½Óµï¿½batch reqï¿½ï¿½
   batch.Put(key, value);
   return Write(opt, &batch);
 }
