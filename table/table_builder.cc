@@ -197,7 +197,7 @@ Status TableBuilder::status() const { return rep_->status; }
 
 Status TableBuilder::Finish() {
   Rep* r = rep_;
-  Flush();
+  Flush(); 
   assert(!r->closed);
   r->closed = true;
 

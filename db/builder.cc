@@ -20,24 +20,24 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
   meta->file_size = 0;
   iter->SeekToFirst();
 
-  // ��ȡtable�ļ���
+  // 通过dbname及number 生成tablename
   std::string fname = TableFileName(dbname, meta->number);
   if (iter->Valid()) {
     WritableFile* file;
 
-    // ����д�����ļ�����������ļ��Ѿ����ڣ�ɾ����ǰ���ڵ�����
+    // 生成sstable文件，用于存储数据
     s = env->NewWritableFile(fname, &file);
     if (!s.ok()) {
       return s;
     }
 
-    // ͨ���ļ������µ�builder�����ҽ�sstable��������д�뵽builder��
+    // 生成builder用于将iter中的内容写入到sstable文件中
     TableBuilder* builder = new TableBuilder(options, file);
     meta->smallest.DecodeFrom(iter->key());
     Slice key;
 
     Log(options.debug_log, "[%s:%u] build new table name(%s)", __FUNCTION__, __LINE__, fname.c_str());
-    // ��memtabe�еļ�¼������д��sstable
+    // 循环将文件内容写入到写入到builder迭代器中
     for (; iter->Valid(); iter->Next()) {
       key = iter->key();
       builder->Add(key, iter->value());

@@ -200,7 +200,7 @@ Status DBImpl::NewDB() {
   // �ļ���Ҫ��¼SSTable�����ļ��Ĺ�����Ϣ�����������ĸ�Level���ļ����ƽ�ɶ����Сkey�����key�����Ƕ���
   const std::string manifest = DescriptorFileName(dbname_, 1);
 
-  Log(options_.debug_log, "create new db name(%s), and manifest file(%s)", dbname_.c_str(), manifest.c_str());
+  DB_LOG("create new db name(%s), and manifest file(%s)", dbname_.c_str(), manifest.c_str());
   WritableFile* file;
   // env_��Ӧ��PosixEnv
   // ����һ���µ�mainfest�ļ�
@@ -528,7 +528,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   return status;
 }
 
-// ��imm_�ڴ��е�����д�뵽sstable�ļ���
+// 将mm内存中的内容写入到sstable文件中
 Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
                                 Version* base) {
   mutex_.AssertHeld();
@@ -537,17 +537,17 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   meta.number = versions_->NewFileNumber();
   pending_outputs_.insert(meta.number);
   Iterator* iter = mem->NewIterator();
-  Log(options_.debug_log, "[%s:%u] Level-0 table #%llu: started", __FUNCTION__, __LINE__, (unsigned long long)meta.number);
+  DB_LOG( "Level-0 table #%llu: started", (unsigned long long)meta.number);
 
   Status s;
   {
     mutex_.Unlock();
-    //������һ��Table_builder����д�ļ�
+    // 创建sstable文件，并且将_imm文件中的内容写入到sstable文件中
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
 
-  Log(options_.debug_log, "[%s:%u] Level-0 table #%llu: %lld bytes %s", __FUNCTION__, __LINE__,
+  DB_LOG("Level-0 table #%llu: %lld bytes %s", 
       (unsigned long long)meta.number, (unsigned long long)meta.file_size, s.ToString().c_str());
   delete iter;
   pending_outputs_.erase(meta.number);
@@ -573,7 +573,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
 }
 
 /**
- * �ڴ�ϲ�����_imm�ڴ��е�����д�뵽sstable�ļ���
+ * 将imm中的内容写入到level0 层sstable文件中
 */
 void DBImpl::CompactMemTable() {
   mutex_.AssertHeld();
@@ -599,7 +599,7 @@ void DBImpl::CompactMemTable() {
 
   if (s.ok()) {
     // Commit to the new state
-    Log(options_.debug_log, "imm have merge success and release memory.");
+    DB_LOG("imm have merge success and release memory.");
     imm_->Unref();
     imm_ = nullptr;
     has_imm_.store(false, std::memory_order_release);
@@ -738,7 +738,7 @@ void DBImpl::BackgroundCompaction() {
      * ��ǰ��minor compaction����ʱ����ִ��minor compaction
      * �ϲ�������Ϊminor��major�ϲ���minor���ȼ����
      */
-    Log(options_.debug_log, "imm is not null, so compact memtable first.");
+    DB_LOG("imm is not null, so compact memtable first.");
     CompactMemTable();
     return;
   }
@@ -755,7 +755,7 @@ void DBImpl::BackgroundCompaction() {
     if (c != nullptr) {
       manual_end = c->input(0, c->num_input_files(0) - 1)->largest;
     }
-    Log(options_.debug_log, "Manual compaction at level-%d from %s .. %s; will stop at %s\n",
+    DB_LOG("Manual compaction at level-%d from %s .. %s; will stop at %s",
         m->level, (m->begin ? m->begin->DebugString().c_str() : "(begin)"),
         (m->end ? m->end->DebugString().c_str() : "(end)"),
         (m->done ? "(end)" : manual_end.DebugString().c_str()));
@@ -779,7 +779,7 @@ void DBImpl::BackgroundCompaction() {
       RecordBackgroundError(status);
     }
     VersionSet::LevelSummaryStorage tmp;
-    Log(options_.debug_log, "Moved #%lld to level-%d %lld bytes %s: %s\n",
+    DB_LOG("Moved #%lld to level-%d %lld bytes %s: %s",
         static_cast<unsigned long long>(f->number), c->level() + 1,
         static_cast<unsigned long long>(f->file_size),
         status.ToString().c_str(), versions_->LevelSummary(&tmp));
@@ -931,7 +931,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   const uint64_t start_micros = env_->NowMicros();
   int64_t imm_micros = 0;  // Micros spent doing imm_ compactions
 
-  Log(options_.debug_log, "Compacting %d@%d + %d@%d files",
+  DB_LOG("Compacting %d@%d + %d@%d files",
       compact->compaction->num_input_files(0), compact->compaction->level(),
       compact->compaction->num_input_files(1),
       compact->compaction->level() + 1);

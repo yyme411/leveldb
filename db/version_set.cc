@@ -481,8 +481,8 @@ int Version::PickLevelForMemTableOutput(const Slice& smallest_user_key,
     while (level < config::kMaxMemCompactLevel) {
       // 在level＋ 1层文件中存在重叠的文件时，直接退出
       if (OverlapInLevel(level + 1, &smallest_user_key, &largest_user_key)) {
-        Log(options_.debug_log, "[%s:%u] Level(%u)) table file is over range（%s-%s)", __FUNCTION__, __LINE__,
-          level + 1, smallest_user_key->data(), largest_user_key->data());
+        DB_LOG("Level(%u)) table file is over range（%s-%s)", 
+          level + 1, smallest_user_key.data(), largest_user_key.data());
         break;
       }
       if (level + 2 < config::kNumLevels) {

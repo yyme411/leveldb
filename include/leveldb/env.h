@@ -321,6 +321,10 @@ void Log(Logger* info_log, const char* format, ...)
 #endif
     ;
 
+void LevelLog(const char *funcName, unsigned int line, const char *format, ...);
+
+#define DB_LOG(format, ...) LevelLog(__FUNCTION__, __LINE__, format, ##__VA_ARGS__)
+
 // A utility routine: write "data" to the named file.
 LEVELDB_EXPORT Status WriteStringToFile(Env* env, const Slice& data,
                                         const std::string& fname);
