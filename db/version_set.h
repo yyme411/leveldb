@@ -106,9 +106,11 @@ class Version {
 
   // Return the level at which we should place a new memtable compaction
   // result that covers the range [smallest_user_key,largest_user_key].
+  /*该函数用来选择  需要将从MemTable dump出的sstable file放入第几层*/
   int PickLevelForMemTableOutput(const Slice& smallest_user_key,
                                  const Slice& largest_user_key);
 
+  /*判断某层level的文件个数*/
   int NumFiles(int level) const { return files_[level].size(); }
 
   // Return a human readable string that describes this version's contents.
@@ -151,6 +153,7 @@ class Version {
   int refs_;          // Number of live refs to this version
 
   // List of files per level
+  /*该version下的所有level的所有sstable文件，每个文件由FileMetaData表示*/
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
   // Next file to compact based on seek stats.
@@ -160,6 +163,10 @@ class Version {
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
+  /********************************************************************
+   *Compaction需要用compaction_score_来判断是否需要发起major compaction
+   * 这部分逻辑与某level所有SSTable file的大小有关系
+   ********************************************************************/
   double compaction_score_;
   int compaction_level_;
 };
@@ -312,6 +319,8 @@ class VersionSet {
 
   // Per-level key at which the next compaction at that level should start.
   // Either an empty string, or a valid InternalKey.
+
+  // 保存这个level里面，下次开始做compact开始的key
   std::string compact_pointer_[config::kNumLevels];
 };
 

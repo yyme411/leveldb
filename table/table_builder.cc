@@ -99,11 +99,35 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
   }
 
+  /**
+   * pending_index_entry 标志位用来判定是不是data block的第一个key，
+   * 因此在上一个data block Flush的时候，会将该标志位置位，
+   * 当下一个data block第一个key-value到来后，成功往index block插入分割key之后，就会清零
+   */
   if (r->pending_index_entry) {
     assert(r->data_block.empty());
+
+    /**
+     * 通过上一个key计算到一个分割key，分割key的计算方法:
+     * 如果上一个data block的最后一个key是 “helloleveldb”， 而当前data block的第一个key是“helloworld ”，
+     * 那么index block就会在新block插入第一个key “helloworld”的时候，计算出两个data block之间的分割key
+     *（比如leveldb中算出来的hellom）。比分割key（hellom）小的key，在上一个data block，
+     * 比分割key(hellom)大的key在下一个data block;
+     * 具体实现方法：通过获取上一个block中的last key与当前key的公共前缀后第一个字符作为分隔符；比公共前缀
+     * 第一个字符自加1得到的key作为分割key
+     */
     r->options.comparator->FindShortestSeparator(&r->last_key, key);
+
     std::string handle_encoding;
     r->pending_handle.EncodeTo(&handle_encoding);
+
+    /**
+     * 计算出来的分割key即r->last_key作为key，而上一个data block的位置信息作为value。
+     * pending_handle里面存放的是上一个data block的位置信息，BlockHandle类型
+     * 注意index_block的组织形式和data block是一模一样的，区别在于存放的key-value pair不同。
+     * key = 分割key
+     * value = 上一个data block的（offset，size）
+     */
     r->index_block.Add(r->last_key, Slice(handle_encoding));
     r->pending_index_entry = false;
   }
@@ -114,9 +138,11 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
 
   r->last_key.assign(key.data(), key.size());
   r->num_entries++;
+  // 在data block中添加<key，value>对
   r->data_block.Add(key, value);
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
+  /*估算当前data block的长度，如果超过了阈值，就要Flush*/
   if (estimated_block_size >= r->options.block_size) {
     Flush();
   }
@@ -125,14 +151,27 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
 void TableBuilder::Flush() {
   Rep* r = rep_;
   assert(!r->closed);
-  if (!ok()) return;
-  if (r->data_block.empty()) return;
+  if (!ok()) {
+    return;
+  }
+
+  if (r->data_block.empty()) {
+    return;
+  }
+
   assert(!r->pending_index_entry);
   WriteBlock(&r->data_block, &r->pending_handle);
   if (ok()) {
+    /**
+     * 设置pending_index_entry为true;当下一个key-value到来的时候，就需要计算分割key，
+     * 融合pending_handle中存放的上一个data block位置信息，作为key-value pair，插入到index block
+     */
     r->pending_index_entry = true;
+
+    // 将文件flush到硬盘上
     r->status = r->file->Flush();
   }
+
   if (r->filter_block != nullptr) {
     r->filter_block->StartBlock(r->offset);
   }
@@ -155,6 +194,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       block_contents = raw;
       break;
 
+    /*可以将内容压缩，但是一般不开启，走上面那个分支*/
     case kSnappyCompression: {
       std::string* compressed = &r->compressed_output;
       if (port::Snappy_Compress(raw.data(), raw.size(), compressed) &&
@@ -177,8 +217,12 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
                                  CompressionType type, BlockHandle* handle) {
   Rep* r = rep_;
+
+  /*此处handle即为前面传入的 r->pending_handle,记录下上一个data block的offset和size*/
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
+
+  // 追加写入data block的内容
   r->status = r->file->Append(block_contents);
   if (r->status.ok()) {
     char trailer[kBlockTrailerSize];
@@ -197,7 +241,7 @@ Status TableBuilder::status() const { return rep_->status; }
 
 Status TableBuilder::Finish() {
   Rep* r = rep_;
-  Flush(); 
+  Flush();  // 写入还未flush的block块
   assert(!r->closed);
   r->closed = true;
 
@@ -234,6 +278,12 @@ Status TableBuilder::Finish() {
       r->index_block.Add(r->last_key, Slice(handle_encoding));
       r->pending_index_entry = false;
     }
+
+    /**
+     * 写入Index Block的内容，
+     * 最重要的是，算出index block在file中的offset和size，存放到index_block_handle中，
+     * 这个信息要记录在footer中
+     */
     WriteBlock(&r->index_block, &index_block_handle);
   }
 
