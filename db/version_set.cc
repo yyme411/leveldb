@@ -707,8 +707,8 @@ class VersionSet::Builder {
       // of data before triggering a compaction.
       /**
        * seek compaction的原理：由于level除了0层以外的文件，level内部中的文件是有序的；在如果level(n)与level(n+1)
-       * 中的两个文件的key可能存在加载，正因为存在这种交叉，在查找某个key时，在level(n)的查询可能是无效的，这种情况下
-       * 又必须呀查询level(n+1)并且在level(n+1)是查询成功的，那么对应level(n)的某一个文件而言，该次查询时未命中的；
+       * 中的两个文件的key可能存在交叉，正因为存在这种交叉，在查找某个key时，在level(n)的查询可能是无效的，这种情况下
+       * 又必须查询level(n+1)并且在level(n+1)是查询成功的，那么对应level(n)的某一个文件而言，该次查询时未命中的；
        * 如果多次查询均出现上述情况，总是在level(n)找不到在level(n+1)查询成功；这说明该层的文件与上一级的文件key存在严重的
        * 重叠；所以会导致效率下降
        */
@@ -1337,7 +1337,6 @@ Compaction* VersionSet::PickCompaction() {
   const bool size_compaction = (current_->compaction_score_ >= 1);
   // 查询时多次查询结果需要查询多个文件，文件需要合并
   const bool seek_compaction = (current_->file_to_compact_ != nullptr);
-
 
   if (size_compaction) {
     // 获取当前待合并的level

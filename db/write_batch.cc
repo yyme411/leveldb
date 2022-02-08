@@ -56,7 +56,7 @@ Status WriteBatch::Iterate(Handler* handler) const {
       case kTypeValue:
         if (GetLengthPrefixedSlice(&input, &key) &&
             GetLengthPrefixedSlice(&input, &value)) {
-          handler->Put(key, value);
+          handler->Put(key, value); // MemTableInserter::Put
         } else {
           return Status::Corruption("bad WriteBatch Put");
         }
@@ -133,7 +133,7 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
   MemTableInserter inserter;
   inserter.sequence_ = WriteBatchInternal::Sequence(b);
   inserter.mem_ = memtable;
-  return b->Iterate(&inserter);
+  return b->Iterate(&inserter); ///< 将数据添加到skiplist中
 }
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {

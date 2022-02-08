@@ -269,7 +269,10 @@ SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
       // Keep searching in this list
       x = next;
     } else {
-      if (prev != nullptr) prev[level] = x;
+      if (prev != nullptr) {
+        prev[level] = x;
+      }
+
       if (level == 0) {
         return next;
       } else {
